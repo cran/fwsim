@@ -2,6 +2,16 @@
 #define _COMMON_H_
 
 #define VERBOSE_
+#define EXTRA_VERBOSE_
+
+#define MUTATION_CATEGORY_THRESHOLD -1
+/*
+#define IS_BIT_SET(var, pos) ((var) & (1 << (pos)))
+*/
+/*
+  Double negation to only get 0 and 1
+*/
+#define IS_BIT_SET(var, pos) !!((var) & (1 << (pos)))
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -24,9 +24,6 @@ static void clear_tree(struct kdtree *tree)
     }
   }
   
-  //free(tree->root->pos);
-  //free(tree->root);
-
 	if (tree->rect) {
 	  free(tree->rect->min);
     free(tree->rect->max);

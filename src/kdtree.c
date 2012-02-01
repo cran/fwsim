@@ -69,8 +69,8 @@ struct kdtree *kd_create(int k)
 
   tree->dim = k;
   tree->root = 0;
-  tree->destr = 0;
   tree->rect = 0;
+  tree->size = 0;
 
   return tree;
 }
@@ -110,7 +110,9 @@ int kd_insert(struct kdtree *tree, const int *pos, const int count)
   if (insert_rec(&tree->root, pos, count, 0, tree->dim)) {
     return -1;
   }
-  
+
+  tree->size += 1;
+      
   if (tree->rect == 0) {
     tree->rect = hyperrect_create(tree->dim, pos, pos);
   } else {
@@ -169,6 +171,11 @@ int kd_insert_or_update_count(struct kdtree *tree, const int *pos, int count)
   int e_dist;
  
   struct kdnode* node = tree->root;
+  
+  if (count <= 0) {
+    error("Got count = 0, wasn't expected to reach such point...\n");
+  }
+  
   node = kd_find_pos(node, pos, 0, tree->dim);
 
   if (node) {

@@ -9,7 +9,10 @@
 #include "hap.h"
 #include "print.h"
 
-SEXP fwsim(SEXP param_g, SEXP param_k, SEXP param_r, SEXP param_alpha, SEXP param_mu, SEXP param_trace, SEXP param_trace_loc_mut);
+SEXP fwsim(SEXP param_g, SEXP param_k, SEXP param_r, 
+  SEXP param_alpha, SEXP param_mu, 
+  SEXP param_trace,
+  SEXP param_alpha_length);
 
 #endif /* _FWSIM_H_ */
 

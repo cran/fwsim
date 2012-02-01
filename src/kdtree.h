@@ -57,7 +57,7 @@ struct kdtree {
   int dim;
   struct kdnode *root;
   struct kdhyperrect *rect;
-  void (*destr)(void*);
+  int size;
 };
 
 /* create a kd-tree for "k"-dimensional data */
