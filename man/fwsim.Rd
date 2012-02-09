@@ -47,6 +47,7 @@ pop <- fwsim(g = 10, r = 7, alpha = 1.1, mu = mut, trace = TRUE)
 pop
 xtabs(N ~ Locus1 + Locus2, pop$haplotypes)
 xtabs(N ~ Locus1 + Locus7, pop$haplotypes)
+plot(pop$sizes)
 }
 \keyword{Fisher-Wright}
 

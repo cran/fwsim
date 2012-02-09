@@ -1,5 +1,8 @@
-Changes in version 0.1-3
+Changes in version 0.2-2
+  * Corrected NEWS bug
+
+Changes in version 0.2-1
 	* Clarified documentation
-	* Fixed a bug
-	* 
+	* Support for locus and direction specific mutation rate
+	* New implementation of the mutation sampling
 
