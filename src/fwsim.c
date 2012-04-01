@@ -33,6 +33,32 @@ static double** generate_mutation_prob_table(int r, double* mu_par) {
   return mutation_prob_table;  
 }
 
+static double expected_target_population_size(const double* alpha, const int k, const int g) {
+  int i;
+  double size = (double)k;
+  
+  for (i = 0; i < g; i++) {
+    size = size*alpha[i];
+  }
+  
+  return size;
+}
+
+static double* expected_population_sizes(const double* alpha, const int k, const int g) {
+  int i;
+  double* sizes = malloc((g+1)*sizeof(double));
+  
+  if (!sizes) error("Could not allocate memory for expected populuation sizes");
+    
+  sizes[0] = (double)k;
+  
+  for (i = 1; i < g + 1; i++) {
+    sizes[i] = sizes[i-1]*alpha[i-1];
+  }
+  
+  return sizes;
+}
+
 SEXP fwsim(SEXP param_g, SEXP param_k, SEXP param_r, 
   SEXP param_alpha, SEXP param_mu, 
   SEXP param_trace,
@@ -43,12 +69,14 @@ SEXP fwsim(SEXP param_g, SEXP param_k, SEXP param_r,
   struct kdtree* population;
   struct kdtree** generations;
   int* pop_sizes;
+  double* expected_pop_sizes;
   int** pop;
   int nrow = 0;
   double** mutation_prob_table;
-  
+
   SEXP R_pop;
   SEXP R_pop_sizes;
+  SEXP R_expected_pop_sizes;
   SEXP R_list_names;
   SEXP R_ans;
   
@@ -84,21 +112,22 @@ SEXP fwsim(SEXP param_g, SEXP param_k, SEXP param_r,
   mutation_prob_table = generate_mutation_prob_table(r, mu_par);
   
   if (trace) {
-    Rprintf("Number of generations:      %d\n", g);
-    Rprintf("Size of initial population: %d\n", k);
-    Rprintf("Number of loci:             %d\n", r);
-    /*
-    Rprintf("Mutation rate:              %f\n", mu);
-    */
-    Rprintf("Mutation rate:\n");
+    Rprintf("Number of generations:        %d\n", g);
+    Rprintf("Size of initial population:   %d\n", k);
+    Rprintf("Number of loci:               %d\n", r);
+    Rprintf("Mutation rates:\n");
     print_mu(mutation_prob_table, r);
     
     if (alpha_length == 1) {
-      Rprintf("Growth rate:                %f\n", alpha[0]);
+      Rprintf("Growth rate:                  %f\n", alpha[0]);
     } else {
-      Rprintf("Growth rate:                ");
+      Rprintf("Growth rate:                  ");
       print_alpha(alpha, g);
+      Rprintf("\n");
     }
+    
+    Rprintf("Expected end population size: %.2f\n", 
+      expected_target_population_size(alpha, k, g));
   }
   
   pop_sizes = malloc((g+1)*sizeof(int));
@@ -117,29 +146,38 @@ SEXP fwsim(SEXP param_g, SEXP param_k, SEXP param_r,
   if (population_to_matrix(population->root, r, &pop, &nrow) != 0) {
     error("Could not convert population matrix to R object");
   }
-         
-   PROTECT(R_pop = allocMatrix(INTSXP, nrow, r + 1));
-   for (i = 0; i < nrow; i++) {
-     for (j = 0; j < r + 1; j++) {
-       IMATRIX(R_pop, i, j) = pop[i][j];
-     }
+       
+  PROTECT(R_pop = allocMatrix(INTSXP, nrow, r + 1));
+  for (i = 0; i < nrow; i++) {
+   for (j = 0; j < r + 1; j++) {
+     IMATRIX(R_pop, i, j) = pop[i][j];
    }
-   UNPROTECT(1);
+  }
+  UNPROTECT(1);
+
+  PROTECT(R_pop_sizes = allocVector(INTSXP, g + 1));
+  for (i = 0; i < g + 1; i++) {
+   INTEGER(R_pop_sizes)[i] = pop_sizes[i];
+  }
+  UNPROTECT(1);
+
+  expected_pop_sizes = expected_population_sizes(alpha, k, g);
+  PROTECT(R_expected_pop_sizes = allocVector(REALSXP, g + 1));
+  for (i = 0; i < g + 1; i++) {
+   REAL(R_expected_pop_sizes)[i] = expected_pop_sizes[i];
+  }
+  UNPROTECT(1);
    
-   PROTECT(R_pop_sizes = allocVector(INTSXP, g + 1));
-   for (i = 0; i < g + 1; i++) {
-     INTEGER(R_pop_sizes)[i] = pop_sizes[i];
-   }
-   UNPROTECT(1);
-   
-  PROTECT(R_list_names = allocVector(STRSXP, 2));
+  PROTECT(R_list_names = allocVector(STRSXP, 3));
   SET_STRING_ELT(R_list_names, 0, mkChar("haplotypes"));
   SET_STRING_ELT(R_list_names, 1, mkChar("sizes"));
+  SET_STRING_ELT(R_list_names, 2, mkChar("expected_sizes"));
   UNPROTECT(1);
   
-  PROTECT(R_ans = allocVector(VECSXP, 2));
+  PROTECT(R_ans = allocVector(VECSXP, 3));
   SET_VECTOR_ELT(R_ans, 0, R_pop);
   SET_VECTOR_ELT(R_ans, 1, R_pop_sizes);
+  SET_VECTOR_ELT(R_ans, 2, R_expected_pop_sizes);
   setAttrib(R_ans, R_NamesSymbol, R_list_names);
   UNPROTECT(1);  
   

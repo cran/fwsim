@@ -1,12 +1,12 @@
-06e3097d0b00464a268a7f129f4a67f4 *DESCRIPTION
+157e252aad55e2be21a87073cc4a6c35 *DESCRIPTION
 b5342c7b4ed04471df80154474597dd9 *NAMESPACE
-ac84ce3e0a7dc9fbf9f4dc175882244c *NEWS
+61be0c7c19668fc3df20749fa60b7357 *NEWS
 680d1e3dfe49da8b63591bdb8209a6be *R/fwsim.R
-dde685e80cf88e3a37a6f41d8f4c8f31 *man/fwsim.Rd
+4d55372af1c1928f93b80c090697e84a *man/fwsim.Rd
 f69cc886801cb7f6eede6334c71381d7 *src/clean.c
 570d0cb65532ae76ae0958f3d72d5852 *src/clean.h
 7a5ac8e2b3a0aaf96dd5d3929d09553e *src/common.h
-aaf16cbfbdd85b6f91ff03c6c0631bca *src/fwsim.c
+4285168a05370e64c052628cdc29126c *src/fwsim.c
 2207ef9e9cf1b3f6eb3135ad20e1aef4 *src/fwsim.h
 6c9bee615467957c88cbebcbef2fc7f8 *src/hap.c
 c48d74c468fd7ab91f56d7f019a85674 *src/hap.h

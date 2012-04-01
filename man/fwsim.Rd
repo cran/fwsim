@@ -1,7 +1,7 @@
 \name{fwsim}
 \alias{fwsim}
 \title{Fisher-Wright Population Simulation}
-\description{This package provides tools to simulate a population under the Fisher-Wright model with a stepwise neutral mutation process on \eqn{r} loci. The population sizes are random Poisson distributed and exponential growth is supported.
+\description{This package provides tools to simulate a population under the Fisher-Wright model with a stepwise neutral mutation process on \eqn{r} loci, where mutations on loci happen independently. The population sizes are random Poisson distributed and exponential growth is supported.
 
 Let \eqn{M} be the population size at generation \eqn{i} and \eqn{N} the population size at generation \eqn{i + 1}.
 Then we assume that \eqn{N} conditionally on \eqn{M} is \eqn{\mbox{Poisson}(\alpha M)}{Poisson(\alpha*M)} distributed for \eqn{\alpha > 0} (\eqn{\alpha > 1} gives growth and \eqn{0 < \alpha < 1} gives decrease).

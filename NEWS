@@ -1,3 +1,7 @@
+Changes in version 0.2-3
+  * Added expected population size of target population
+  * Added expecgted population size for each generation
+  
 Changes in version 0.2-2
   * Corrected NEWS bug
 
