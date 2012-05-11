@@ -11,6 +11,7 @@
 
 SEXP fwsim(SEXP param_g, SEXP param_k, SEXP param_r, 
   SEXP param_alpha, SEXP param_mu, 
+  SEXP param_save_gs,
   SEXP param_trace,
   SEXP param_alpha_length);
 

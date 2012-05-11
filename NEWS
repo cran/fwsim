@@ -1,6 +1,10 @@
+Changes in version 0.2-5
+  * Added possibility to save populations during evolution (e.g. for analysing drift)
+  * User interrupt now allowed
+
 Changes in version 0.2-3
   * Added expected population size of target population
-  * Added expecgted population size for each generation
+  * Added expected population size for each generation
   
 Changes in version 0.2-2
   * Corrected NEWS bug

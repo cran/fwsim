@@ -1,5 +1,16 @@
 #include "sim.h"
 
+int do_save_gs(int* save_gs) {
+  if (save_gs[1] == -1) {
+    /*
+      save_gs[1] is only -1 if save.gs was given as NULL in R
+    */
+    return 0;
+  }
+  
+  return 1;
+}
+
 int population_to_matrix(struct kdnode* head, int r, int*** pop, int* nrowptr) {
   int** matrix;
   int nrow = 0;
@@ -58,6 +69,8 @@ static struct kdtree* generate_initial_population(int k, int r) {
   res = kd_insert(tree, h, k);
   if (res != 0) error("Could not insert new node in kd-tree");
   
+  free(h); // mikl
+  
   /*
   Rprintf("Initial pop generated\n");
   */
@@ -79,6 +92,7 @@ static struct kdtree* simulate_generation(struct kdtree* fathers, int k, int r,
   int* nj;
   int* rN;
   
+  /* Changes father's structure */
   fathers_list = tree_to_list(fathers, r);
   children = kd_create(r);
  
@@ -89,6 +103,12 @@ static struct kdtree* simulate_generation(struct kdtree* fathers, int k, int r,
     nj = malloc((r+1)*sizeof(int));
     if (!nj) error("Could not allocate memory for nj");
 
+    #ifdef VERBOSE
+    Rprintf("        ");
+    print_h(current->pos, r);
+    Rprintf(" has count %d:\n", current->count);
+    #endif
+    
     /*
     if (trace == 1) {
       Rprintf("  Haplotype ");
@@ -100,11 +120,9 @@ static struct kdtree* simulate_generation(struct kdtree* fathers, int k, int r,
     for (l = 0; l <= r; l++) {
       nj[l] = (int)random_poisson(mut_cats[l]->prob_sum*alpha*mj);
       
-      /*
-      if (trace == 1 && nj[l] > 0) {
-        Rprintf("    %d muts: %5d haplotypes\n", l, nj[l]);
-      }
-      */
+      #ifdef VERBOSE
+      Rprintf("            mutation cat %2d evolves %5d haplotypes\n", l, nj[l]);
+      #endif
     }
 
     /*
@@ -136,20 +154,22 @@ static struct kdtree* simulate_generation(struct kdtree* fathers, int k, int r,
       
       rmultinom(nj[l], mut_cat->extended_normalised_probs, mut_cat->extended_nrow, rN);
       
-      /*
-      Rprintf("  %2d mutations:\n", mut_cat->d);
-      */
+      #ifdef EXTRA_VERBOSE
+      //Rprintf("  %2d mutations:\n", mut_cat->d);
+      #endif
       
       for (j = 0; j < mut_cat->extended_nrow; j++) {
         if (rN[j] == 0) {
           continue;
         }
         
-        /*
-        Rprintf("    %d of index %d\n", rN[j], j);
-        */
+        #ifdef VERBOSE
+        //Rprintf("    %d of index %d\n", rN[j], j);
+        #endif
+
         int* new_hap = get_mutated_haplotype(mut_cat, current->pos, j);
         res = kd_insert_or_update_count(children, new_hap, rN[j]);
+        free(new_hap);        
         if (res != 0) error("Could not insert new node in kd-tree");
       }
 
@@ -157,6 +177,8 @@ static struct kdtree* simulate_generation(struct kdtree* fathers, int k, int r,
     }
     
     free(nj);
+    
+    //free(current->pos);
     
     current = current->right;
 
@@ -170,20 +192,20 @@ static struct kdtree* simulate_generation(struct kdtree* fathers, int k, int r,
   return children;
 }
 
-struct kdtree** simulate_generations(int g, int k, int r, double* alpha, double** mutation_prob_table, int* pop_sizes, int trace) {
+struct kdtree** simulate_generations(int g, int k, int r, double* alpha, double** mutation_prob_table, int* pop_sizes, int* save_gs, int trace) {
   int size = 0;
-  int i;
+  int i, i2;
   struct kdtree** generations;
   struct kdtree* fathers;
   struct kdtree* children;
   struct mutation_category** mut_cats;
-  int mut_cats_threshold = (MUTATION_CATEGORY_THRESHOLD > 0 && MUTATION_CATEGORY_THRESHOLD < r) ? MUTATION_CATEGORY_THRESHOLD : r;
   double total_mut_prob_sum = 0;
-
-  #ifdef VERBOSE
-  Rprintf("\nMutation categories threshold = %d\n", mut_cats_threshold);
-  #endif
+  int do_free_fathers;
   
+  #ifdef VERBOSE
+    trace = 1;  
+  #endif
+    
   /*
   if (trace) {
     Rprintf("Mutation parameters in Poisson(f(d; r, mu)*alpha*N):\n");
@@ -192,12 +214,10 @@ struct kdtree** simulate_generations(int g, int k, int r, double* alpha, double*
   generations = malloc((g+1)*sizeof(struct kdtree*));
   if (!generations) error("Could not allocate memory for generations");
     
-  mut_cats = malloc((mut_cats_threshold + 1)*sizeof(struct mutation_category*));
+  mut_cats = malloc((r + 1)*sizeof(struct mutation_category*));
   if (!mut_cats) error("Could not allocate memory for mut_cats");
   
-  for (i = 0; i <= mut_cats_threshold; i++) {
-    mut_cats[i] = malloc(sizeof(struct mutation_category));
-    if (!mut_cats[i]) error("Could not allocate memory for mut_cats[i]");
+  for (i = 0; i <= r; i++) {
     mut_cats[i] = create_mutation_category(r, i, mutation_prob_table);
     total_mut_prob_sum += mut_cats[i]->prob_sum;
   }
@@ -205,7 +225,7 @@ struct kdtree** simulate_generations(int g, int k, int r, double* alpha, double*
   if (trace == 1) {
     Rprintf("Mutation categories:\n");
     
-    for (i = 0; i <= mut_cats_threshold; i++) { 
+    for (i = 0; i <= r; i++) { 
       print_mutation_category(mut_cats[i]);
     }
   
@@ -230,23 +250,56 @@ struct kdtree** simulate_generations(int g, int k, int r, double* alpha, double*
     Rprintf("Evolving generation %5d\n", i);
     */
     fathers = generations[i-1];
+    do_free_fathers = 0;
 
     children = simulate_generation(fathers, k, r, mut_cats, alpha[i-1], &size, trace);
-
     generations[i] = children;
     pop_sizes[i] = size;
 
-    free_tree(fathers);
+    /* Check if the previous generation, generations[i-1] = fathers, should be saved */
+    if (i == 1) {
+      /* We never save the initial population, we know it's all 0 */
+      do_free_fathers = 1;
+    } else if (pop_sizes[i-1] == 0) {
+      do_free_fathers = 1;
+    } else {
+      if (do_save_gs(save_gs)) {
+        if (save_gs[i-1] != 1) {
+          do_free_fathers = 1;
+        }
+      } else {
+        do_free_fathers = 1;
+      }
+    }
+    
+    if (do_free_fathers == 1) {
+      free_tree(fathers);
+      generations[i-1] = NULL;
+    }
+        
+    /*
+    if (save_gs[0] == -1) {
+    if (save_gs[0] == -1 || (i > 1 && save_gs[i-2] != 1)) {
+    */
+    /*
+    if (save_gs[0] == -1 || (i > 1 && save_gs[i-2] != 1)) {
+      //Rprintf("Freeing fathers for generation %d\n", i-2+1);
+      free_tree(fathers);
+      generations[i-1] = NULL;
+    }
+    */
     
     if (trace) {
       Rprintf("%5d/%d: done (growth rate = %.3f, population size = %9d, haplotypes = %7d)\n", i, g, alpha[i-1], size, children->size);
     }
+    
+    R_CheckUserInterrupt();
   }
   
   /* Up to g-1 is done in loop, but not this */
   generations[g]->root = tree_to_list(generations[g], r);
   
-  for (i = 0; i <= mut_cats_threshold; i++) {
+  for (i = 0; i <= r; i++) {
     free_mutation_category(mut_cats[i]);
   }
   

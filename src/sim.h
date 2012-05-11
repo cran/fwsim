@@ -11,7 +11,8 @@
 #include "mutation.h"
 
 int population_to_matrix(struct kdnode* head, int r, int*** pop, int* nrowptr);
-struct kdtree** simulate_generations(int g, int k, int r, double* alpha, double** mutation_prob_table, int* pop_sizes, int trace);
+struct kdtree** simulate_generations(int g, int k, int r, double* alpha, double** mutation_prob_table, int* pop_sizes, int* save_gs, int trace);
+int do_save_gs(int* save_gs);
 
 #endif /* _SIM_H_ */
 

@@ -134,7 +134,7 @@ void print_mutation_category(struct mutation_category* mut_cat) {
   Rprintf("    Number of possible locus combinations    = %d\n", mut_cat->simple_nrow);
   Rprintf("    Number of possible mutation combinations = %d\n", mut_cat->extended_nrow);
   
-  #ifdef VERBOSE
+  #ifdef EXTRA_VERBOSE
   for (i = 0; i < mut_cat->simple_nrow; i++) {
     for (j = 0; j < mut_cat->d; j++) {
       Rprintf("%d ", mut_cat->simple_table[i][j]);
@@ -143,7 +143,7 @@ void print_mutation_category(struct mutation_category* mut_cat) {
   }  
   #endif
 
-  #ifdef VERBOSE
+  #ifdef EXTRA_VERBOSE
   Rprintf("extended table:\n");
 
   for (i = 0; i < mut_cat->extended_nrow; i++) {

@@ -4,7 +4,6 @@
 #define VERBOSE_
 #define EXTRA_VERBOSE_
 
-#define MUTATION_CATEGORY_THRESHOLD -1
 /*
 #define IS_BIT_SET(var, pos) ((var) & (1 << (pos)))
 */
@@ -27,6 +26,7 @@
 #include <Rdefines.h>
 #include <Rinternals.h>
 #include <Rmath.h>
+#include <R_ext/Utils.h>
 
 /*
 #define MATHLIB_STANDALONE

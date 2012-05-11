@@ -274,11 +274,25 @@ void free_mutation_category(struct mutation_category* mut_cat) {
   int i, j;
   int d = mut_cat->d;
   
+  /* -> */
   for (i = 0; i < mut_cat->simple_nrow; i++) {
     free(mut_cat->simple_table[i]);
   }
   
   free(mut_cat->simple_table);
+  free(mut_cat->simple_not_others_probs);
+  /* <- */
+  
+  
+  /* -> */
+  for (i = 0; i < mut_cat->extended_nrow; i++) {
+    free(mut_cat->extended_table[i]);
+  }
+
+  free(mut_cat->extended_table);
+  free(mut_cat->extended_probs);
+  free(mut_cat->extended_normalised_probs);
+  /* <- */  
   
   free(mut_cat);  
 }

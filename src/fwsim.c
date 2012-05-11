@@ -52,7 +52,7 @@ static double* expected_population_sizes(const double* alpha, const int k, const
     
   sizes[0] = (double)k;
   
-  for (i = 1; i < g + 1; i++) {
+  for (i = 1; i <= g; i++) {
     sizes[i] = sizes[i-1]*alpha[i-1];
   }
   
@@ -61,10 +61,11 @@ static double* expected_population_sizes(const double* alpha, const int k, const
 
 SEXP fwsim(SEXP param_g, SEXP param_k, SEXP param_r, 
   SEXP param_alpha, SEXP param_mu, 
+  SEXP param_save_gs, 
   SEXP param_trace,
   SEXP param_alpha_length)
 {
-  int i, j;
+  int i, j, i2;
   
   struct kdtree* population;
   struct kdtree** generations;
@@ -75,6 +76,8 @@ SEXP fwsim(SEXP param_g, SEXP param_k, SEXP param_r,
   double** mutation_prob_table;
 
   SEXP R_pop;
+  SEXP R_pop_intermediate;
+  SEXP R_pop_intermediate_tmp;
   SEXP R_pop_sizes;
   SEXP R_expected_pop_sizes;
   SEXP R_list_names;
@@ -84,6 +87,7 @@ SEXP fwsim(SEXP param_g, SEXP param_k, SEXP param_r,
   int k = INTEGER(param_k)[0];
   int r = INTEGER(param_r)[0];
   double* mu_par = REAL(param_mu);
+  int* save_gs = INTEGER(param_save_gs);
   int trace = INTEGER(param_trace)[0];
   int alpha_length = INTEGER(param_alpha_length)[0];
     
@@ -112,21 +116,32 @@ SEXP fwsim(SEXP param_g, SEXP param_k, SEXP param_r,
   mutation_prob_table = generate_mutation_prob_table(r, mu_par);
   
   if (trace) {
-    Rprintf("Number of generations:        %d\n", g);
-    Rprintf("Size of initial population:   %d\n", k);
-    Rprintf("Number of loci:               %d\n", r);
+    Rprintf("Number of generations:                        %d\n", g);
+    Rprintf("Size of initial population:                   %d\n", k);
+    Rprintf("Number of loci:                               %d\n", r);
     Rprintf("Mutation rates:\n");
     print_mu(mutation_prob_table, r);
     
     if (alpha_length == 1) {
-      Rprintf("Growth rate:                  %f\n", alpha[0]);
+      Rprintf("Growth rate:                                  %f\n", alpha[0]);
     } else {
-      Rprintf("Growth rate:                  ");
+      Rprintf("Growth rate:                                  ");
       print_alpha(alpha, g);
       Rprintf("\n");
     }
+
+    Rprintf("Generations to record besides end population: ");
     
-    Rprintf("Expected end population size: %.2f\n", 
+    if (do_save_gs(save_gs)) {
+      for (i = 1; i < g; i++) {
+        if (save_gs[i] == 1) Rprintf("%d ", i);
+      }
+      Rprintf("\n");
+    } else {
+      Rprintf("NONE\n");
+    }
+    
+    Rprintf("Expected end population size:                 %.2f\n", 
       expected_target_population_size(alpha, k, g));
   }
   
@@ -134,56 +149,132 @@ SEXP fwsim(SEXP param_g, SEXP param_k, SEXP param_r,
   if (!pop_sizes) error("Could not allocate memory for populuation sizes");
   
   GetRNGstate();
-  generations = simulate_generations(g, k, r, alpha, mutation_prob_table, pop_sizes, trace);
+  generations = simulate_generations(g, k, r, alpha, mutation_prob_table, pop_sizes, save_gs, trace);
   if (!generations) error("Generations could not be simulated");
   PutRNGstate();
   
   for (i = 0; i < r; i++) free(mutation_prob_table[i]);
   free(mutation_prob_table);
-
+  
   population = generations[g];  
  
+  if (population == NULL) {
+    error("Did not expect the population to be NULL");
+  }
+    
   if (population_to_matrix(population->root, r, &pop, &nrow) != 0) {
     error("Could not convert population matrix to R object");
   }
-       
-  PROTECT(R_pop = allocMatrix(INTSXP, nrow, r + 1));
-  for (i = 0; i < nrow; i++) {
-   for (j = 0; j < r + 1; j++) {
-     IMATRIX(R_pop, i, j) = pop[i][j];
-   }
+
+  if (nrow == 0) {
+    R_pop = R_NilValue;
+  } else {
+    PROTECT(R_pop = allocMatrix(INTSXP, nrow, r + 1));
+    for (i = 0; i < nrow; i++) {
+     for (j = 0; j < r + 1; j++) {
+       IMATRIX(R_pop, i, j) = pop[i][j];
+     }
+     free(pop[i]);
+    }
+    UNPROTECT(1);
+
+    //free_tree(population);
+    //generations[g] = NULL;
   }
-  UNPROTECT(1);
+
+  free(pop);
+
+
+  if (do_save_gs(save_gs)) {
+    PROTECT(R_pop_intermediate = allocVector(VECSXP, g-1));
+    for (i2 = 1; i2 < g; i2++) {
+      if (save_gs[i2] != 1) {
+        SET_VECTOR_ELT(R_pop_intermediate, i2, R_NilValue);
+        continue;
+      }
+    
+      population = generations[i2];
+      
+      if (population == NULL) {
+        /* Possibly because the parent population died out */
+        /*error("Did not expect the save_gs population to be NULL");
+        */
+        SET_VECTOR_ELT(R_pop_intermediate, i2-1, R_NilValue);
+        continue;
+      }
+     
+      if (population_to_matrix(population->root, r, &pop, &nrow) != 0) {
+        error("Could not convert population matrix to R object");
+      }
+
+      if (nrow == 0) {
+        SET_VECTOR_ELT(R_pop_intermediate, i2-1, R_NilValue);
+      } else {
+        PROTECT(R_pop_intermediate_tmp = allocMatrix(INTSXP, nrow, r + 1));
+        for (i = 0; i < nrow; i++) {
+         for (j = 0; j < r + 1; j++) {
+           IMATRIX(R_pop_intermediate_tmp, i, j) = pop[i][j];
+         }
+         free(pop[i]);
+        }
+        UNPROTECT(1);
+        
+        SET_VECTOR_ELT(R_pop_intermediate, i2-1, R_pop_intermediate_tmp);
+      }
+      
+      free(pop);
+      
+      free_tree(population);
+      generations[i2] = NULL; 
+    }  
+    UNPROTECT(1);
+  } else {
+    R_pop_intermediate = R_NilValue;
+  }
+
+
+  
 
   PROTECT(R_pop_sizes = allocVector(INTSXP, g + 1));
-  for (i = 0; i < g + 1; i++) {
+  for (i = 0; i < g+1; i++) {
    INTEGER(R_pop_sizes)[i] = pop_sizes[i];
   }
   UNPROTECT(1);
 
+
   expected_pop_sizes = expected_population_sizes(alpha, k, g);
   PROTECT(R_expected_pop_sizes = allocVector(REALSXP, g + 1));
-  for (i = 0; i < g + 1; i++) {
+  for (i = 0; i <= g; i++) {
    REAL(R_expected_pop_sizes)[i] = expected_pop_sizes[i];
   }
   UNPROTECT(1);
-   
-  PROTECT(R_list_names = allocVector(STRSXP, 3));
-  SET_STRING_ELT(R_list_names, 0, mkChar("haplotypes"));
-  SET_STRING_ELT(R_list_names, 1, mkChar("sizes"));
-  SET_STRING_ELT(R_list_names, 2, mkChar("expected_sizes"));
+  free(expected_pop_sizes);
+
+
+  PROTECT(R_list_names = allocVector(STRSXP, 4));
+  SET_STRING_ELT(R_list_names, 0, mkChar("intermediate.haplotypes"));
+  SET_STRING_ELT(R_list_names, 1, mkChar("haplotypes"));
+  SET_STRING_ELT(R_list_names, 2, mkChar("sizes"));
+  SET_STRING_ELT(R_list_names, 3, mkChar("expected.sizes"));
   UNPROTECT(1);
-  
-  PROTECT(R_ans = allocVector(VECSXP, 3));
-  SET_VECTOR_ELT(R_ans, 0, R_pop);
-  SET_VECTOR_ELT(R_ans, 1, R_pop_sizes);
-  SET_VECTOR_ELT(R_ans, 2, R_expected_pop_sizes);
+
+
+  PROTECT(R_ans = allocVector(VECSXP, 4));
+  SET_VECTOR_ELT(R_ans, 0, R_pop_intermediate);
+  SET_VECTOR_ELT(R_ans, 1, R_pop);
+  SET_VECTOR_ELT(R_ans, 2, R_pop_sizes);
+  SET_VECTOR_ELT(R_ans, 3, R_expected_pop_sizes);
   setAttrib(R_ans, R_NamesSymbol, R_list_names);
   UNPROTECT(1);  
   
-  free_tree(population);
+  for (i = 0; i <= g; i++) {
+    if (!generations[i]) continue;
+    free_tree(generations[i]);
+  }
+
+  free(alpha);  
   free(generations);
-  free(pop_sizes);
+  free(pop_sizes);  
   
   return(R_ans);
 }

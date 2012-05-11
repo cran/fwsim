@@ -81,6 +81,7 @@ static int insert_rec(struct kdnode **nptr, const int *pos, const int count, int
   struct kdnode *node;
 
   if(!*nptr) {
+    
     if(!(node = malloc(sizeof *node))) {
       return -1;
     }
@@ -94,7 +95,7 @@ static int insert_rec(struct kdnode **nptr, const int *pos, const int count, int
     node->dir = dir;
     node->left = node->right = 0;
     *nptr = node;
-    return 0;
+    return 0;   
   }
 
   node = *nptr;
