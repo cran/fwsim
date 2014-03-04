@@ -1,3 +1,6 @@
+Changes in version 0.2-6
+  * Updated license information
+
 Changes in version 0.2-5
   * Added possibility to save populations during evolution (e.g. for analysing drift)
   * User interrupt now allowed
