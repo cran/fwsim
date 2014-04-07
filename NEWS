@@ -1,3 +1,8 @@
+Changes in version 0.3
+  * Updated entire infrastructure to using Rcpp
+  * Updated API to allow for different mutation models and to specify a starting population explicitely
+  * Utility functions (print.fwsim, summary.fwsim, plot.fwsim and print.mutmodel) introduced
+
 Changes in version 0.2-6
   * Updated license information
 

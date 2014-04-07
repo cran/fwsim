@@ -1,56 +1,91 @@
 \name{fwsim}
 \alias{fwsim}
+\alias{print.fwsim}
+\alias{summary.fwsim}
+\alias{plot.fwsim}
 \title{Fisher-Wright Population Simulation}
 \description{This package provides tools to simulate a population under the Fisher-Wright model with a stepwise neutral mutation process on \eqn{r} loci, where mutations on loci happen independently. The population sizes are random Poisson distributed and exponential growth is supported. Intermediate generations can be saved in order to study e.g. drift.
 
 Let \eqn{M} be the population size at generation \eqn{i} and \eqn{N} the population size at generation \eqn{i + 1}.
-Then we assume that \eqn{N} conditionally on \eqn{M} is \eqn{\mbox{Poisson}(\alpha M)}{Poisson(\alpha*M)} distributed for \eqn{\alpha > 0} (\eqn{\alpha > 1} gives growth and \eqn{0 < \alpha < 1} gives decrease).
+Then we assume that \eqn{N} conditionally on \eqn{M} is \eqn{\mbox{Poisson}(\alpha M)}{Poisson(\alpha*M)} distributed for \eqn{\alpha > 0} (\eqn{\alpha > 1} gives expected growth and \eqn{0 < \alpha < 1} gives expected decrease).
 
 For each haplotype \eqn{x} occuring \eqn{m} times in the \eqn{i}'th generation, the number
 of children \eqn{n} is \eqn{\mbox{Poisson}(\alpha m)}{Poisson(\alpha*m)} distributed independently of other haplotypes. 
 It then follows that the sum of the number of haplotypes follows a \eqn{\mbox{Poisson}(\alpha M)}{Poisson(\alpha*M)} distribution (as just stated in the previous paragraph) and that \eqn{n} conditionally on \eqn{N} follows a \eqn{\mbox{Binomial}(N, m/M)}{Binomial(N, m/M)} as expected.
 
-The mutation model is the stepwise neutral mutation model. There is possibility for a per locus per direction mutation rate (different up and down rates for each locus). The mutation model is implemented by dividing the number of children, following a \eqn{\mbox{Poisson}(\alpha m)}{Poisson(\alpha*m)} distribution, into categories depending on how many times they mutate. There are \eqn{r+1} categories, namely for \eqn{d = 0, 1, \ldots, r}{d = 0, 1, ..., r} mutations. The count for \eqn{d} mutations follows a \eqn{\mbox{Poisson}(\eta_d \alpha m)}{Poisson(\eta_d*\alpha*m)} distribution, where \eqn{\eta_d} is the probability for \eqn{d} mutations with \eqn{\sum_d \eta_d = 1}. See details for futher explanation.
+The mutation model can be e.g. the stepwise neutral mutation model. See \code{\link{init_mutmodel}} for details.
 }
 \usage{
-fwsim(g = 10, k = 20000, r = 7, alpha = 1, mu = 0.003, save.gs = NULL, trace = TRUE, ...)
+fwsim(G, H0, N0, mutmodel, alpha = 1.0, SNP = FALSE, 
+  save_generations = NULL, progress = TRUE, trace = FALSE, ...)
+\method{print}{fwsim}(x, ...)
+\method{summary}{fwsim}(object, ...)
+\method{plot}{fwsim}(x, which = 1L, ...)
 }
 \arguments{
-\item{g}{ number of generations to evolve.}
-\item{k}{ size of the initial population.}
-\item{r}{ number of loci.}
-\item{alpha}{ growth rate, either a vector of size 1 or g, the latter to use a different growth rate each generation.}
-\item{mu}{ mutation rate - se details.}
-\item{save.gs}{ which intermediate generations beside the end population to save - requires much more memory! Must be between 0 and \code{g}, both excluded, or \code{NULL} if none besides the end population should be saved.}
-\item{trace}{ whether to print trace of the evolution.}
+\item{G}{ number of generations to evolve (integer, remember postfix L).}
+\item{H0}{ haplotypes of the initial population. Must be a vector or matrix (if more than one initial haplotype). The number of loci is the length or number of columns of \code{H0}.}
+\item{N0}{ count of the \code{H0} haplotypes. The i'th element is the count of the haplotype \code{H0[i, ]}. \code{sum(N0)} is the size of initial population.}
+\item{mutmodel}{ a \code{mutmodel} object created with \code{\link{init_mutmodel}}. Alternatively, a numeric vector of length r of mutation probabilities (this will create a stepwise mutation model with r loci divide the mutation probabilities evenly between upwards and downwards mutation).}
+\item{alpha}{ vector of length 1 or \code{G} of growth factors (1 correspond to expected constant population size). If length 1, the value is reused in creating a vector of length \code{G}.}
+\item{SNP}{ to make alleles modulus 2 to immitate SNPs.}
+\item{save_generations}{ to save intermediate populations. \code{NULL} means that no intermediate population will be saved. Else, a vector of the generation numbers to save.}
+\item{progress}{ whether to print progress of the evolution.}
+\item{trace}{ whether to print trace of the evolution (more verbose than \code{progress}).}
+\item{x}{A \code{fwsim} object.}
+\item{object}{A \code{fwsim} object.}
+\item{which}{A number specifying the plot (currently only 1: the actual population sizes vs the expected sizes).}
 \item{\dots}{ not used.}
 }
-\details{
-If \eqn{\mu} is a number, this is used across all loci with \eqn{\mu/2} as upwards mutation rate and \eqn{\mu/2} as downwards mutation rate for each locus.
-
-If \eqn{\mu} is a vector of length \eqn{r}, \eqn{\mu_1, \ldots, \mu_r}, say, this is interpreted as locus specific mutation rates with equal upwards and downwards mutation rate of \eqn{\mu_i/2} for the \eqn{i}'th locus.
-
-If \eqn{\mu} is a \eqn{2 \times r}{2 x r} matrix, then the first row in the \eqn{i}'th column is upwards mutation rate for the \eqn{i}'th locus and second row is the downwards mutation rate for the \eqn{i}'th locus.
-}
+%\details{
+%}
 \value{
-A list with elements
-\item{intermediate.haplotypes}{ a list of length \code{g-1} of haplotypes in the \code{g-1} intermediate populations}
-\item{haplotypes}{ haplotypes in the end population after \code{g} generations}
-\item{sizes}{ the population size for each generation}
-\item{expected_sizes}{ the expected population size for each generation}
+A \code{fwsim} object with elements
+\item{pars}{ the parameters used for the simulation}
+\item{saved_populations}{ a list of haplotypes in the intermediate populations}
+\item{population}{ haplotypes in the end population after \code{G} generations}
+\item{pop_sizes}{ the population size for each generation}
+\item{expected_pop_sizes}{ the expected population size for each generation}
 }
 \author{Mikkel Meyer Andersen <mikl@math.aau.dk> and Poul Svante Eriksen}
 \examples{
-pop <- fwsim(r = 2)
-xtabs(N ~ Locus1 + Locus2, pop$haplotypes)
+# SMM (stepwise mutation model) example
+set.seed(1)
+fit <- fwsim(G = 100L, H0 = c(0L, 0L, 0L), N0 = 10000L, 
+  mutmodel = c(Loc1 = 0.001, Loc2 = 0.002, Loc3 = 0.003))
+summary(fit)
+fit
 
-mut <- matrix(c(seq(0.001, 0.003, length.out = 13), 0.4), nrow = 2, byrow = TRUE)
-mut
-pop <- fwsim(g = 10, r = 7, alpha = 1.1, mu = mut, save.gs = NULL, trace = TRUE)
-pop
-xtabs(N ~ Locus1 + Locus2, pop$haplotypes)
-xtabs(N ~ Locus1 + Locus7, pop$haplotypes)
-plot(pop$sizes)
+# SMM (stepwise mutation model) example
+H0 <- matrix(c(0L, 0L, 0L), 1L, 3L, byrow = TRUE)
+
+mutmodel <- init_mutmodel(modeltype = 1L, 
+  mutpars = matrix(c(c(0.003, 0.001), rep(0.004, 2), rep(0.001, 2)), 
+                   ncol = 3, 
+                   dimnames = list(NULL, c("DYS19", "DYS389I", "DYS391"))))
+mutmodel
+
+set.seed(1)
+fit <- fwsim(G = 100L, H0 = H0, N0 = 10000L, mutmodel = mutmodel)
+
+xtabs(N ~ DYS19 + DYS389I, fit$population)
+plot(1L:fit$pars$G, fit$pop_sizes, type = "l", 
+  ylim = range(range(fit$pop_sizes), range(fit$expected_pop_sizes)))
+points(1L:fit$pars$G, fit$expected_pop_sizes, type = "l", col = "red")
+
+# LMM (logistic mutation model) example
+mutpars.locus1 <- c(0.149,   2.08,    18.3,   0.149,   0.374,   27.4) # DYS19
+mutpars.locus2 <- c(0.500,   1.18,    18.0,   0.500,   0.0183,  349)  # DYS389I
+mutpars.locus3 <- c(0.0163,  17.7,    11.1,   0.0163,  0.592,   14.1) # DYS391
+mutpars <- matrix(c(mutpars.locus1, mutpars.locus2, mutpars.locus3), ncol = 3)
+colnames(mutpars) <- c("DYS19", "DYS389I", "DYS391")
+mutmodel <- init_mutmodel(modeltype = 2L, mutpars = mutpars)
+mutmodel
+
+set.seed(1)
+H0_LMM <- matrix(c(15L, 13L, 10L), 1L, 3L, byrow = TRUE)
+fit_LMM <- fwsim(G = 100L, H0 = H0_LMM, N0 = 10000L, mutmodel = mutmodel)
+xtabs(N ~ DYS19 + DYS389I, fit_LMM$population)
 }
 \keyword{Fisher-Wright}
 

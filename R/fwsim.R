@@ -1,95 +1,175 @@
-fwsim <- function(g = 10, k = 20000, r = 7, alpha = 1, mu = 0.003, save.gs = NULL, trace = TRUE, ...) { 
-  if (!is.numeric(g) || length(g) != 1) stop("The number of generations, g, must be an integer")
-  if (!is.numeric(k) || length(k) != 1) stop("The initial population size, k, must be an integer")
-  if (!is.numeric(r) || length(r) != 1) stop("The number of loci, r, must be an integer")
-  
-  if (!is.numeric(alpha) || (length(alpha) != 1 && length(alpha) != g)) 
-    stop("The growth rate, alpha, must be a numeric vector of size 1 or g")
+################################################################################
+# PARAMETERS
+################################################################################
+# G:          Integer: Number of generations to simulate
+#
+# H0:         Matrix:  The haplotypes of the initial population.
+#                      The number of loci is the number of columns of H0.
+#
+# N0:         Vector:  The i'th element is the count of the 
+#                      haplotype H0[i, ] in the initial population.
+#                      sum(N0) is the size of initial population
+#
+# mutmodel:   mutmodel
+#
+# alpha:      Vector:  Vector of length G of growth factors (1 correspond to expected 
+#                      constant population size)
+#             Scalar:  If a scalar, the same value is used for all generations
+#
+# SNP         Bool:    Make alleles modulus 2 to immitate SNPs
+#
+# save_generations:    NULL:    No intermediate population will be saved.
+#             Vector:  A vector of the generation numbers to save
+#
+# progress:   Bool:    Show progress of simulations
+# trace:      Bool:    Show trace of simulations (more verbose than progress)
 
-  if (!is.logical(trace) || length(trace) != 1) stop("trace must be a logical")
-  
-  if (!is.numeric(mu)) stop("The mutation rate, mu, must be a numeric")
-  
-  if (is.matrix(mu)) {
-    if (!(nrow(mu) == 2 && ncol(mu) == r)) {
-      stop("The mutation is specified as a matrix, but with the wrong dimensions. Expected a 2xr matrix.")
+############################################
+# RETURN VALUE
+############################################
+# pars:               The parameters used to create the result
+# saved.populations:  intermediate populations if chosen by setting 
+#                     corresponding values of save_generations (see above)
+# population:         the haplotypes and counts of the end population
+# pop.sizes:          the population size for each generation
+# expected.pop.sizes: the expected population sizes
+
+fwsim <- function(
+  G, 
+  H0, 
+  N0,  
+  mutmodel, 
+  alpha = 1.0,
+  SNP = FALSE,
+  save_generations = NULL, 
+  progress = TRUE, 
+  trace = FALSE, ...) {
+
+  if (is.null(G) || length(G) != 1L || !is.integer(G) || G <= 0L) {
+    stop("G must be an integer >= 1L (note the postfix L)")
+  }
+
+  if (is.null(H0)) {
+    stop("H0 must be a vector or matrix of integers")
+  }
+
+  if (!is.matrix(H0)) {
+    if (!is.integer(H0)) {
+      stop("H0 must be a vector or matrix of integers")
     }
-  } else if (length(mu) == r) {
-    mu <- matrix(rep(mu, 2)/2, nrow = 2, byrow = TRUE)
-  } else if (length(mu) == 1) {
-    mu <- matrix(rep(mu, 2*r)/2, nrow = 2, byrow = TRUE)
-  } else {
-    stop("The mutation specification cannot be inferred. Please read the manual at ?fwsim.")
-  }
-
-  if (any(mu < 0 | mu > 1)) {
-    stop("Please only use mutation rates between 0 and 1.")
-  }
-  
-  if (!is.null(save.gs) && length(save.gs) > 0) {
-    if (!is.numeric(save.gs)) stop("save.gs must be an integer.")
-    save.gs <- sort(round(save.gs))
-    if (any(save.gs <= 0 | save.gs >= g)) stop("If not null, save.gs must be numbers between 0 and g, both excluded.")
     
-    new.gs <- rep(0, g-1)
-    new.gs[save.gs] <- 1
-    save.gs <- c(-1, new.gs, -1)
-  } else {
-    save.gs <- rep(-1, g+1) # For easier handling in C
-  }
+    H0_names <- NULL
+    
+    if (!is.null(names(H0))) {
+      H0_names <- names(H0)
+    }
+    
+    H0 <- matrix(H0, nrow = 1)
+    
+    if (!is.null(H0_names)) {
+      colnames(H0) <- H0_names
+    }
+  } 
   
-  # Let's let the GC clean up before the run
-  gc()
-  
-  ans <- .Call("fwsim", 
-    as.integer(g), 
-    as.integer(k), 
-    as.integer(r), 
-    as.numeric(alpha), 
-    as.numeric(mu), 
-    as.integer(save.gs), 
-    as.integer(trace),
-    as.integer(length(alpha)),
-    PACKAGE = "fwsim")
-  
-  #print(ans$haplotypes)
-  if (!is.null(ans$haplotypes)) {
-    ans$haplotypes <- data.frame(ans$haplotypes)  
-    colnames(ans$haplotypes)[1:r] <- paste("Locus", 1:r, sep = "")
-    colnames(ans$haplotypes)[r + 1] <- "N"
-  } else {
-    warning("Population died out")
-  }
-
-  if (!is.null(ans$intermediate.haplotypes)) {
-    ans$intermediate.haplotypes <- lapply(ans$intermediate.haplotypes, function(l) {
-      if (is.null(l)) return(NULL)
-      
-      newl <- data.frame(l)
-      colnames(newl)[1:r] <- paste("Locus", 1:r, sep = "")
-      colnames(newl)[r + 1] <- "N"
-      return(newl)
-    })
+  if (ncol(H0) == 0L || nrow(H0) == 0L || !is.integer(H0)) {
+    stop("H0 must be a vector or matrix of integers")
   }
     
-  if ((is.null(ans$haplotypes) && ans$sizes[g+1] != 0) || 
-      (!is.null(ans$haplotypes) && sum(ans$haplotypes$N) != ans$sizes[g+1])) {
-    
-    #if (save.gs[2] != -1) {
-    #  is <- tail(which(save.gs == 1))
-    #  print(ans$intermediate.haplotypes[is])
-    #  print(lapply(ans$intermediate.haplotypes[is], function(hap) sum(hap$N)))
-    #}
-
-    #print(ans$haplotypes)
-        
-    #print(tail(ans$sizes))
-    stop(sum(ans$haplotypes$N), " = sum(ans$haplotypes$N) != ans$sizes[g+1] = ", ans$sizes[g+1])
+  r <- ncol(H0)  
+  
+  if (is.null(N0) || !is.integer(N0) || length(N0) != nrow(H0) || any(N0 <= 0L)) {
+    stop("N0 must be a integer vector with length corresponding to the number of rows of H0 and have elements >= 1L (note the postfix L)")
   }
   
-  # Let's let the GC clean up again
-  gc()
+  #if (is.null(mutmodel) || !is(mutmodel, "mutmodel")) {
+  #  stop("mutmodel must be a mutmodel created with init_mutmodel")
+  #}
   
-  return(ans)
+  if (is.null(mutmodel)) {
+    stop("mutmodel must be a mutmodel created with init_mutmodel or numeric vector of mutation probabilities")
+  }
+  
+  if (!is(mutmodel, "mutmodel")) {
+    if (length(mutmodel) <= 0L || !is.numeric(mutmodel) || any(mutmodel < 0) || any(mutmodel > 1)) {
+      stop("If mutmodel is a numeric vector, it must have elements between 0 and 1 (mutation probabilities)")
+    }
+    
+    mutpars <-  matrix(c(mutmodel / 2, mutmodel / 2), ncol = length(mutmodel), byrow = TRUE)
+    
+    if (!is.null(names(mutmodel))) {
+      colnames(mutpars) <- names(mutmodel)
+    } else if (!is.null(colnames(H0))) {
+      colnames(mutpars) <- colnames(H0)
+    }
+    
+    mutmodel <- init_mutmodel(modeltype = 1L, mutpars = mutpars)
+  }
+    
+  if (is.null(ncol(mutmodel$mutpars)) || ncol(mutmodel$mutpars) != r) {
+    stop("mutmodel and H0 each specifies different number of loci")
+  }
+
+  if (!is.numeric(alpha) || (length(alpha) != 1L && length(alpha) != G)) {
+    stop("The growth rate, alpha, must be a numeric vector of size 1L or G")
+  }
+  if (length(alpha) == 1L) alpha <- rep(alpha, G)
+  
+  if (is.null(SNP) || !is.logical(SNP)) {
+    stop("SNP must be logical/boolean")
+  }
+  
+  if (!is.null(save_generations) && length(save_generations) > 0L) {
+    if (!is.integer(save_generations)) stop("save_generations must be a vector of integers.")
+    
+    save_generations <- sort(unique(save_generations))
+    
+    if (any(save_generations <= 0L | save_generations >= G)) stop("If not null, save_generations must be numbers between 0L and G, both excluded.")
+    
+    new.gs <- rep(0L, G - 1L)
+    new.gs[save_generations] <- 1L
+    save_generations <- c(new.gs, 0L)
+  } else {
+    save_generations <- rep(0L, G) # For easier handling in C++
+  }
+  
+  if (is.null(progress) || !is.logical(progress) || length(progress) != 1L) {
+    stop("progress must one logical/boolean")
+  }
+  
+  if (is.null(trace) || !is.logical(trace) || length(trace) != 1L) {
+    stop("trace must one logical/boolean")
+  }
+  #progress <- as.integer(progress)
+
+	res <- Cpp_fwpopsim(G, H0, N0, alpha, mutmodel, SNP, save_generations, progress, trace)
+	
+	#################
+	expected.pop.sizes <- numeric(G + 1L)
+  expected.pop.sizes[1L] <- sum(N0)
+
+  for (generation in 2L:(G+1L)) {
+    expected.pop.sizes[generation] <- alpha[generation - 1L]*expected.pop.sizes[generation - 1L]
+  }
+  
+  expected.pop.sizes <- expected.pop.sizes[-1L]
+  
+	res$expected_pop_sizes <- expected.pop.sizes
+	#################
+	
+	colnames(res$population) <- c(colnames(mutmodel$mutpars), "N")
+	colnames(res$pars$H0) <- colnames(mutmodel$mutpars)
+	
+	for (g in seq_along(res$saved_populations)) {
+	  if (is.matrix(res$saved_populations[[g]])) {
+	    colnames(res$saved_populations[[g]]) <- c(colnames(mutmodel$mutpars), "N")
+	  }
+	}
+	
+	res$population <- as.data.frame(res$population)
+	
+	class(res) <- c("fwsim", class(res))
+
+  return(res)
 }
+
 

@@ -1,37 +1,82 @@
-#ifndef _COMMON_H_
-#define _COMMON_H_
+#ifndef _haptools_COMMON_H
+#define _haptools_COMMON_H
 
-#define VERBOSE_
-#define EXTRA_VERBOSE_
+#include <vector>
+#include <Rcpp.h>
+#include <cassert>
+
+struct haplotype {
+  std::vector<int> profile;
+
+  int count;
+
+  friend std::ostream & operator<<(std::ostream &o, haplotype const& other) {
+    std::ostringstream oss;
+
+    if (!other.profile.empty())
+    {
+      std::copy(other.profile.begin(), other.profile.end() - 1, 
+        std::ostream_iterator<int>(oss, ","));
+      oss << other.profile.back();
+      return o << "(" << oss.str() << ") x " << other.count;
+    }
+
+    return o;
+  }
+    
+  bool operator==(const haplotype &other) const
+  { 
+    //return (profile.size() == other.profile.size() && profile == other.profile);
+    return profile == other.profile;
+  }  
+};
 
 /*
-#define IS_BIT_SET(var, pos) ((var) & (1 << (pos)))
-*/
-/*
-  Double negation to only get 0 and 1
-*/
-#define IS_BIT_SET(var, pos) !!((var) & (1 << (pos)))
+  R:
+  
+  hash <- function(h) {
+    hash_val <- 0
+    for (i in seq_along(h)) {
+      hash_val <- hash_val*31 + ifelse(h[i] < 0, -2*h[i], 2*h[i]+1)
+    }
+    return(hash_val)
+  }
+  
+  hash(c(0, 0, 0))
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <ctype.h>
+  hash(c(0, 0, 1))
+  hash(c(0, 1, 1))
+  
+  hash(c(0, 1, 0))
+  hash(c(1, 0, 0))
+  
+  hash(c(1, 1, 1))
+  
+  max(table(apply(expand.grid((-5:5), (-5:5), (-5:5)), 1, hash)))
+  #max(table(apply(expand.grid((-5:5), (-5:5), (-5:5), (-5:5)), 1, hash)))
+  #max(table(apply(expand.grid((-3:3), (-3:3), (-3:3), (-3:3), (-3:3)), 1, hash)))
+  
+  max(table(apply(expand.grid((-10:10), (-10:10), (-10:10)), 1, hash)))
+  max(table(apply(expand.grid((-20:20), (-20:20)), 1, hash)))
+  max(table(apply(expand.grid((-50:50), (-50:50)), 1, hash)))
+*/
+struct haplotype_hash {
+  size_t operator () (const haplotype &h) const { 
+    size_t hash = 0;
 
-#if defined(WIN32) || defined(__WIN32__)
-#include <malloc.h>
+    for (std::vector<int>::const_iterator it = h.profile.begin(); 
+      it != h.profile.end(); ++it) {
+
+      /*
+        Negative allele mapped to even numbers, positive to odd numbers
+        Assume rather small range of alleles
+      */
+      hash = hash*31 + (*it < 0 ? -2*(*it) : 2*(*it)+1);
+    }
+    
+    return hash;
+  }
+};
+
 #endif
-
-#include <R.h>
-#include <Rdefines.h>
-#include <Rinternals.h>
-#include <Rmath.h>
-#include <R_ext/Utils.h>
-
-/*
-#define MATHLIB_STANDALONE
-#include <Rmath.h>
-*/
-
-#endif /* _COMMON_H_ */
 
