@@ -1,3 +1,6 @@
+Changes in version 0.3.1
+  * Solved minor C++ errors on some platforms
+  
 Changes in version 0.3
   * Updated entire infrastructure to using Rcpp
   * Updated API to allow for different mutation models and to specify a starting population explicitely

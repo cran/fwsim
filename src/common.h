@@ -24,11 +24,14 @@ struct haplotype {
     return o;
   }
     
-  bool operator==(const haplotype &other) const
-  { 
+  bool operator==(const haplotype &other) const { 
     //return (profile.size() == other.profile.size() && profile == other.profile);
     return profile == other.profile;
-  }  
+  }
+
+  bool operator () (const haplotype* h1, const haplotype* h2) const { 
+    return *h1 == *h2;
+  }
 };
 
 /*
@@ -61,6 +64,11 @@ struct haplotype {
   max(table(apply(expand.grid((-50:50), (-50:50)), 1, hash)))
 */
 struct haplotype_hash {
+  /*
+    Negative allele mapped to even numbers, positive to odd numbers
+    Assume rather small range of alleles
+  */
+  
   size_t operator () (const haplotype &h) const { 
     size_t hash = 0;
 

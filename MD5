@@ -1,6 +1,6 @@
-4c2c5e1ea0dab26ebb1f8f4c0ddcc8e0 *DESCRIPTION
+fa5e52d111a9189722be73b819c9de38 *DESCRIPTION
 a1e72c614d3b7accdc605d9f2b186fa8 *NAMESPACE
-0f3d79a16f7e5cd228763cb1034eaefb *NEWS
+a9dd3859f863971d139b4792c655d4b0 *NEWS
 a6a2b38bbc2a7ae4c651e02b582bc4ab *R/RcppExports.R
 963c539dab02f05b0eadc4ab02c20b4f *R/fwsim.R
 ff8efd6a766bbdb8403f1000559cd3b2 *R/init_mutmodel.R
@@ -12,8 +12,10 @@ ca79b62248536726dc2d24b85f9354ff *R/summary.R
 fdf237e543dd8cead7e8140424ef953f *man/fwsim.Rd
 7e12b5ef21972400d0b59f538d05d6a4 *man/init_mutmodel.Rd
 feb6d5f52b6ef543666112d11e79b57a *man/mutmodel.Rd
+e3d3cb360fbfdb3c6974e14eb5f09870 *src/Makevars
+73505498722ad4b07b0ddb3067e92523 *src/Makevars.win
 eeee181a572324cf9a391d799da6dde5 *src/RcppExports.cpp
-3e9e36dbaebe286de6002c3359d1727c *src/common.h
+efd39ea52f13f641b9c84cbebe516fcd *src/common.h
 94833c64aacef949ccde94e0cb0e9fb4 *src/fwpopsim.cpp
 cd5c6a5af15c2b1ced580e464b01e9be *src/fwpopsim.h
 bbe2b760bdecbb32e71e1d477a09e6f1 *src/mutationmodels.cpp
