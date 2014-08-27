@@ -2,8 +2,12 @@ print.fwsim <-
 function(x, ...) {
   if (!is(x, "fwsim")) stop("x must be a fwsim object")
 
-  cat("fwsim with ", x$pars$G, " generations with initial population size ", sum(x$pars$N0),
+  if (x$size_model == "stochastic") {
+    cat("fwsim (stochastic population size) with ", x$pars$G, " generations with initial population size ", sum(x$pars$N0),
       " and final population size ", sum(x$population[, ncol(x$population)]), ".\n", sep = "")
+  } else if (x$size_model == "fixed") {
+    cat("fwsim (fixed population size) with ", x$pars$G, " generations with population size ", sum(x$pars$N0), ".\n", sep = "")
+  }
   
   return(invisible(NULL))
 }

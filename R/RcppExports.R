@@ -5,3 +5,7 @@ Cpp_fwpopsim <- function(G, H0, N0, alpha, mutmodel, SNP, save_gs, progress, tra
     .Call('fwsim_Cpp_fwpopsim', PACKAGE = 'fwsim', G, H0, N0, alpha, mutmodel, SNP, save_gs, progress, trace)
 }
 
+Cpp_fwpopsim_fixed <- function(G, H0, N0, mutmodel, SNP, save_gs, progress, trace) {
+    .Call('fwsim_Cpp_fwpopsim_fixed', PACKAGE = 'fwsim', G, H0, N0, mutmodel, SNP, save_gs, progress, trace)
+}
+

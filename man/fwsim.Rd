@@ -1,12 +1,14 @@
 \name{fwsim}
 \alias{fwsim}
+\alias{fwsim_fixed}
 \alias{print.fwsim}
 \alias{summary.fwsim}
 \alias{plot.fwsim}
 \title{Fisher-Wright Population Simulation}
-\description{This package provides tools to simulate a population under the Fisher-Wright model with a stepwise neutral mutation process on \eqn{r} loci, where mutations on loci happen independently. The population sizes are random Poisson distributed and exponential growth is supported. Intermediate generations can be saved in order to study e.g. drift.
+\description{This package provides tools to simulate a population under the Fisher-Wright model with a stepwise neutral mutation process on \eqn{r} loci, where mutations on loci happen independently. The population sizes are either fixed (traditional/original Fisher-Wright model) or random Poisson distributed with exponential growth supported. Intermediate generations can be saved in order to study e.g. drift.
 
-Let \eqn{M} be the population size at generation \eqn{i} and \eqn{N} the population size at generation \eqn{i + 1}.
+For stochastic population sizes:
+Model described in detail at \url{http://arxiv.org/abs/1210.1773}. Let \eqn{M} be the population size at generation \eqn{i} and \eqn{N} the population size at generation \eqn{i + 1}.
 Then we assume that \eqn{N} conditionally on \eqn{M} is \eqn{\mbox{Poisson}(\alpha M)}{Poisson(\alpha*M)} distributed for \eqn{\alpha > 0} (\eqn{\alpha > 1} gives expected growth and \eqn{0 < \alpha < 1} gives expected decrease).
 
 For each haplotype \eqn{x} occuring \eqn{m} times in the \eqn{i}'th generation, the number
@@ -17,6 +19,8 @@ The mutation model can be e.g. the stepwise neutral mutation model. See \code{\l
 }
 \usage{
 fwsim(G, H0, N0, mutmodel, alpha = 1.0, SNP = FALSE, 
+  save_generations = NULL, progress = TRUE, trace = FALSE, ...)
+fwsim_fixed(G, H0, N0, mutmodel, SNP = FALSE, 
   save_generations = NULL, progress = TRUE, trace = FALSE, ...)
 \method{print}{fwsim}(x, ...)
 \method{summary}{fwsim}(object, ...)
@@ -72,6 +76,9 @@ xtabs(N ~ DYS19 + DYS389I, fit$population)
 plot(1L:fit$pars$G, fit$pop_sizes, type = "l", 
   ylim = range(range(fit$pop_sizes), range(fit$expected_pop_sizes)))
 points(1L:fit$pars$G, fit$expected_pop_sizes, type = "l", col = "red")
+
+set.seed(1)
+fit_fixed <- fwsim_fixed(G = 100L, H0 = H0, N0 = 10000L, mutmodel = mutmodel)
 
 # LMM (logistic mutation model) example
 mutpars.locus1 <- c(0.149,   2.08,    18.3,   0.149,   0.374,   27.4) # DYS19
