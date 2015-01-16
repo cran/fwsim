@@ -132,7 +132,8 @@ List Cpp_fwpopsim_fixed(int G, IntegerMatrix H0, IntegerVector N0,
     IntegerMatrix new_pop_tree(pop_size, loci);
 
     for (int individual = 0; individual < pop_size; individual++) {
-      IntegerVector person = pop_tree(individual, Rcpp::_);
+      int parent = (int)(pop_size*Rf_runif(0, 1));
+      IntegerVector person = pop_tree(parent, Rcpp::_);
       new_pop_tree(individual, Rcpp::_) = person;
 
       for (int locus = 0; locus < loci; locus++) {
@@ -142,8 +143,7 @@ List Cpp_fwpopsim_fixed(int G, IntegerMatrix H0, IntegerVector N0,
         double mut_down = locus_mut_prob[0];
         double mut_up_cum = locus_mut_prob[0] + locus_mut_prob[1];
         
-        double u;
-        do {u = unif_rand();} while (u <= 0 || u >= 1);
+        double u = Rf_runif(0, 1);
         
         /*
         Rprint(mut_down);

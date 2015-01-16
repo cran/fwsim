@@ -1,3 +1,6 @@
+Changes in version 0.3.3
+  * Error in fwsim_fixed corrected. Sorry about that.
+  
 Changes in version 0.3.2
   * Implemented original/traditional Fisher-Wright simulation with fixed population size (function called fwsim_fixed)
 
