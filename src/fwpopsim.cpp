@@ -3,6 +3,8 @@
 //#include <iostream>
 //#include <fstream>
 
+// [[Rcpp::plugins(cpp11)]]
+
 using namespace Rcpp;
 
 /*
@@ -59,7 +61,7 @@ IntegerMatrix unordered_set_to_matrix(RCPP_UNORDERED_SET<haplotype,
 */
 // [[Rcpp::export]]
 List Cpp_fwpopsim(int G, IntegerMatrix H0, IntegerVector N0, NumericVector alpha, 
-  List mutmodel, bool SNP, IntegerVector save_gs, bool progress, bool trace) {
+  List mutmodel, bool SNP, IntegerVector save_gs, bool progress, bool trace, bool ensure_children = false) {
   
   Function Rprint("print");
 
@@ -200,7 +202,9 @@ List Cpp_fwpopsim(int G, IntegerMatrix H0, IntegerVector N0, NumericVector alpha
       
       std::vector<haplotype> children;
       
-      int children_count = (int)Rf_rpois(alpha[generation]*(double)count);
+      //int children_count = (int)Rf_rpois(alpha[generation]*(double)count);
+      // FIXME: 2016-05-20
+      int children_count = (ensure_children) ? (int)Rf_rpois(alpha[generation]*(double)count) + 1 : (int)Rf_rpois(alpha[generation]*(double)count);
       
       if (trace) {
         Rcout << "-----------------------------------------------" 

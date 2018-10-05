@@ -3,6 +3,8 @@
 //#include <iostream>
 //#include <fstream>
 
+// [[Rcpp::plugins(cpp11)]]
+
 using namespace Rcpp;
 
 /*
@@ -108,6 +110,14 @@ List Cpp_fwpopsim_fixed(int G, IntegerMatrix H0, IntegerVector N0,
   }
   
   IntegerMatrix pop_tree(pop_size, loci);
+  IntegerVector parent_vec(pop_size);
+  IntegerVector founder_vec(pop_size);
+
+  for (int individual = 0; individual < pop_size; individual++) {
+    parent_vec[individual] = R_NaInt;
+    founder_vec[individual] = individual;
+  }
+      
   int pop_tree_index = 0;
   
   for (int i = 0; i < n; i++) {
@@ -119,22 +129,39 @@ List Cpp_fwpopsim_fixed(int G, IntegerMatrix H0, IntegerVector N0,
     }
   }
   
-  List saved_populations(G - 1);
+  /*
+  List saved_populations(G - 1);  
+  List saved_parents(G - 1); 
+  List saved_founders(G - 1);
+  */
+
+  List saved_populations(G-1);
+  IntegerMatrix saved_parents(G-1, pop_size); 
+  IntegerMatrix saved_founders(G-1, pop_size);
+  
+  IntegerVector NAVEC(pop_size);
+  for (int individual = 0; individual < pop_size; individual++) {
+    NAVEC[individual] = R_NaInt;
+  }
+
 
   for (int generation = 0; generation < G; generation++) {
     if (trace) {
       Rcout << "===============================================" << std::endl;
-      Rcout << "Generation " << generation + 1 << " (out of " << G << 
-        ")" << std::endl;
+      Rcout << "Generation " << generation + 1 << " (out of " << G << ")" << std::endl;
       Rcout << "===============================================" << std::endl;
     }
 
     IntegerMatrix new_pop_tree(pop_size, loci);
+    IntegerVector new_parent_vec(pop_size);
+    IntegerVector new_founder_vec(pop_size);
 
     for (int individual = 0; individual < pop_size; individual++) {
       int parent = (int)(pop_size*Rf_runif(0, 1));
       IntegerVector person = pop_tree(parent, Rcpp::_);
       new_pop_tree(individual, Rcpp::_) = person;
+      new_parent_vec[individual] = parent;
+      new_founder_vec[individual] = founder_vec[parent];
 
       for (int locus = 0; locus < loci; locus++) {
         double locus_mut_prob[3];
@@ -161,15 +188,22 @@ List Cpp_fwpopsim_fixed(int G, IntegerMatrix H0, IntegerVector N0,
     
     popsizes[generation] = pop_size;
     
+    //if (generation < (G - 1)) {
     if (generation < (G - 1)) {
       if (save_gs[generation] == 1) {
         saved_populations[generation] = pop_tree;
+        saved_parents(generation, Rcpp::_) = parent_vec;
+        saved_founders(generation, Rcpp::_) = founder_vec;
       } else {
         saved_populations[generation] = R_NaInt;
+        saved_parents(generation, Rcpp::_) = NAVEC;
+        saved_founders(generation, Rcpp::_) = NAVEC;
       }
     }
     
     pop_tree = new_pop_tree;
+    parent_vec = new_parent_vec;
+    founder_vec = new_founder_vec;
     
     if (trace) {
       Rprint(pop_tree);
@@ -199,11 +233,18 @@ List Cpp_fwpopsim_fixed(int G, IntegerMatrix H0, IntegerVector N0,
   pars["progress"] = progress;
   pars["trace"] = progress;
 
+  List extra;
+  extra["parents"] = parent_vec; 
+  extra["founders"] = founder_vec; 
+  extra["saved_parents"] = saved_parents; 
+  extra["saved_founders"] = saved_founders; 
+  
   List ret;
   ret["pars"] = pars;
   ret["saved_populations"] = saved_populations;
   ret["population"] = pop_tree;
   ret["pop_sizes"] = popsizes; 
+  ret["extra"] = extra; 
 
   return(ret);
 }

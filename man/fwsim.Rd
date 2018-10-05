@@ -19,7 +19,7 @@ The mutation model can be e.g. the stepwise neutral mutation model. See \code{\l
 }
 \usage{
 fwsim(G, H0, N0, mutmodel, alpha = 1.0, SNP = FALSE, 
-  save_generations = NULL, progress = TRUE, trace = FALSE, ...)
+  save_generations = NULL, progress = TRUE, trace = FALSE, ensure_children = FALSE, ...)
 fwsim_fixed(G, H0, N0, mutmodel, SNP = FALSE, 
   save_generations = NULL, progress = TRUE, trace = FALSE, ...)
 \method{print}{fwsim}(x, ...)
@@ -36,6 +36,7 @@ fwsim_fixed(G, H0, N0, mutmodel, SNP = FALSE,
 \item{save_generations}{ to save intermediate populations. \code{NULL} means that no intermediate population will be saved. Else, a vector of the generation numbers to save.}
 \item{progress}{ whether to print progress of the evolution.}
 \item{trace}{ whether to print trace of the evolution (more verbose than \code{progress}).}
+\item{ensure_children}{ Ensures that every generation has at least one child; implemented by getting \eqn{\mbox{Poisson}(\alpha M) + 1}{Poisson(\alpha*M) + 1} children.}
 \item{x}{A \code{fwsim} object.}
 \item{object}{A \code{fwsim} object.}
 \item{which}{A number specifying the plot (currently only 1: the actual population sizes vs the expected sizes).}

@@ -43,7 +43,7 @@ fwsim <- function(
   SNP = FALSE,
   save_generations = NULL, 
   progress = TRUE, 
-  trace = FALSE, ...) {
+  trace = FALSE, ensure_children = FALSE, ...) {
 
   if (is.null(G) || length(G) != 1L || !is.integer(G) || G <= 0L) {
     stop("G must be an integer >= 1L (note the postfix L)")
@@ -141,7 +141,7 @@ fwsim <- function(
   }
   #progress <- as.integer(progress)
 
-	res <- Cpp_fwpopsim(G, H0, N0, alpha, mutmodel, SNP, save_generations, progress, trace)
+	res <- Cpp_fwpopsim(G, H0, N0, alpha, mutmodel, SNP, save_generations, progress, trace, ensure_children)
 	
 	#################
 	expected.pop.sizes <- numeric(G + 1L)
@@ -281,13 +281,15 @@ fwsim_fixed <- function(
 	expected.pop.sizes <- rep(sum(N0), G)  
 	res$expected_pop_sizes <- expected.pop.sizes
 	#################
-	
+
+	#print(str(res$population))
 	colnames(res$population) <- colnames(mutmodel$mutpars)
 	colnames(res$pars$H0) <- colnames(mutmodel$mutpars)
 	
 	for (g in seq_along(res$saved_populations)) {
 	  if (is.matrix(res$saved_populations[[g]])) {
-	    colnames(res$saved_populations[[g]]) <- c(colnames(mutmodel$mutpars), "N")
+	    #colnames(res$saved_populations[[g]]) <- c(colnames(mutmodel$mutpars), "N")
+	    colnames(res$saved_populations[[g]]) <- colnames(mutmodel$mutpars)# No N as this is fixed
 	  }
 	}
 	

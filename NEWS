@@ -1,3 +1,7 @@
+Changes in version 0.3.4
+  * Error in fwsim_fixed corrected. Sorry about that.
+  * Minor changes to update CRAN package requirements
+  
 Changes in version 0.3.3
   * Error in fwsim_fixed corrected. Sorry about that.
   

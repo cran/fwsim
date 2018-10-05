@@ -1,4 +1,7 @@
-useDynLib(fwsim)
+useDynLib(fwsim, .registration = TRUE)
+importFrom("graphics", "axis", "legend", "plot", "points")
+importFrom("methods", "is")
+importFrom("utils", "head")
 import(Rcpp)
 export(init_mutmodel)
 export(print.mutmodel)
